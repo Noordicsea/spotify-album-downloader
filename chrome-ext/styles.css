@@ -1,0 +1,43 @@
+#spotify-download-button {
+    background-color: #1db954;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: bold;
+    font-family: 'Spotify Circular', Helvetica, Arial, sans-serif;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 8px;
+    transition: all 0.2s ease;
+    text-transform: capitalize;
+}
+
+#spotify-download-button:hover {
+    background-color: #1ed760;
+    transform: scale(1.04);
+}
+
+#spotify-download-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+#spotify-download-button svg {
+    flex-shrink: 0;
+}
+
+/* Ensure the button fits well in different Spotify layouts */
+[data-testid="action-bar-row"] #spotify-download-button {
+    height: 32px;
+    min-height: 32px;
+}
+
+.main-actionBar-ActionBar #spotify-download-button {
+    height: 32px;
+    min-height: 32px;
+} 
