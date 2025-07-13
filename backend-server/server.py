@@ -80,14 +80,15 @@ def run_command(command, cwd=None):
         traceback.print_exc()
         return False, "", str(e)
 
-def download_with_spotdl(url, output_path, audio_format='mp3'):
+def download_with_spotdl(url, output_path, audio_format='mp3', download_id=None):
     """
-    Download using spotDL
+    Download using spotDL with real-time progress tracking
     """
     print(f"=== DOWNLOAD_WITH_SPOTDL CALLED ===")
     print(f"URL: {url}")
     print(f"Output Path: {output_path}")
     print(f"Audio Format: {audio_format}")
+    print(f"Download ID: {download_id}")
     
     try:
         # Ensure output directory exists
@@ -101,45 +102,84 @@ def download_with_spotdl(url, output_path, audio_format='mp3'):
         print(f"Command: {command}")
         print(f"Working Directory: {output_path}")
         
-        success, stdout, stderr = run_command(command, cwd=output_path)
+        # Run command with real-time output parsing
+        import subprocess
         
-        print(f"=== COMMAND COMPLETED ===")
-        print(f"Success: {success}")
-        print(f"STDOUT: {stdout}")
-        print(f"STDERR: {stderr}")
+        try:
+            process = subprocess.Popen(
+                command,
+                shell=True,
+                cwd=output_path,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True
+            )
+            
+            output_lines = []
+            current_track = 0
+            total_tracks = 0
+            
+            if process.stdout:
+                for line in iter(process.stdout.readline, ''):
+                    output_lines.append(line)
+                    print(f"spotDL output: {line.strip()}")
+                    
+                    # Parse progress information
+                    if download_id and download_id in download_status:
+                        # Look for track information in output
+                        if "Downloaded" in line and "tracks" in line:
+                            # Parse total tracks from output like "Downloaded 16 tracks"
+                            import re
+                            match = re.search(r'Downloaded (\d+) tracks', line)
+                            if match:
+                                total_tracks = int(match.group(1))
+                                download_status[download_id]['total_tracks'] = total_tracks
+                        
+                        # Look for individual track download progress
+                        if "Downloading:" in line or "Downloaded:" in line:
+                            current_track += 1
+                            if total_tracks == 0:
+                                # If we don't know total tracks yet, estimate from current progress
+                                total_tracks = max(current_track, 1)
+                            
+                            download_status[download_id]['current_track'] = current_track
+                            download_status[download_id]['total_tracks'] = total_tracks
+                            download_status[download_id]['message'] = f'Downloading track {current_track}...'
+                            
+                            # Calculate percentage based on track progress
+                            if total_tracks > 0:
+                                track_progress = (current_track / total_tracks) * 75  # 75% of total progress for downloading
+                                download_status[download_id]['progress'] = min(25 + track_progress, 100)
+                        
+                        # Look for album information to get total tracks
+                        if "tracks found" in line:
+                            match = re.search(r'(\d+) tracks found', line)
+                            if match:
+                                total_tracks = int(match.group(1))
+                                download_status[download_id]['total_tracks'] = total_tracks
+            
+            process.wait()
+            
+            if process.returncode == 0:
+                print(f"spotDL success")
+                return True, '\n'.join(output_lines)
+            else:
+                print(f"spotDL error: {process.returncode}")
+                return False, '\n'.join(output_lines)
+                
+        except Exception as e:
+            print(f"Process execution error: {e}")
+            return False, str(e)
         
-        if success:
-            print(f"spotDL success: {stdout}")
-            return True, stdout
-        else:
-            print(f"spotDL error: {stderr}")
-            return False, stderr
     except Exception as e:
         print(f"spotDL exception: {e}")
         import traceback
         traceback.print_exc()
         return False, str(e)
 
-def fix_cover_art(directory_path):
-    """
-    Fix cover art using get-cover-art
-    """
-    try:
-        # get-cover-art command (it's a Python module)
-        command = f'python -m get_cover_art --path "{directory_path}"'
-        
-        print(f"Running: {command}")
-        success, stdout, stderr = run_command(command, cwd=directory_path)
-        
-        if success:
-            print(f"get-cover-art success: {stdout}")
-            return True, stdout
-        else:
-            print(f"get-cover-art error: {stderr}")
-            return False, stderr
-    except Exception as e:
-        print(f"get-cover-art exception: {e}")
-        return False, str(e)
+
 
 def download_album_thread(download_id, url, artist, album, album_type, audio_format, download_path):
     """
@@ -158,7 +198,9 @@ def download_album_thread(download_id, url, artist, album, album_type, audio_for
         download_status[download_id] = {
             'status': 'downloading',
             'message': 'Starting download...',
-            'progress': 0
+            'progress': 0,
+            'current_track': 0,
+            'total_tracks': 0
         }
         
         # Sanitize names
@@ -185,7 +227,7 @@ def download_album_thread(download_id, url, artist, album, album_type, audio_for
         
         print(f"=== CALLING SPOTDL ===")
         # Download with spotDL
-        success, output = download_with_spotdl(url, album_dir, audio_format)
+        success, output = download_with_spotdl(url, album_dir, audio_format, download_id)
         print(f"spotDL returned: success={success}, output={output}")
         
         if not success:
@@ -196,18 +238,6 @@ def download_album_thread(download_id, url, artist, album, album_type, audio_for
                 'progress': 0
             }
             return
-        
-        # Update status
-        download_status[download_id]['message'] = 'Fixing cover art...'
-        download_status[download_id]['progress'] = 75
-        
-        print(f"=== FIXING COVER ART ===")
-        # Fix cover art
-        success, output = fix_cover_art(album_dir)
-        
-        if not success:
-            print(f"Cover art fix failed: {output}")
-            # Don't fail the entire download for cover art issues
         
         # Complete
         download_status[download_id] = {
@@ -318,7 +348,7 @@ def list_downloads():
 if __name__ == '__main__':
     print("Starting Spotify Album Downloader Backend Server...")
     print("Server will run on http://localhost:8080")
-    print("Make sure spotDL and get-cover-art are installed!")
+    print("Make sure spotDL is installed!")
     print("Press Ctrl+C to stop the server")
     
     try:

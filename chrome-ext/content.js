@@ -106,16 +106,24 @@ async function pollDownloadStatus(downloadId, albumInfo) {
             } else if (status.status === 'downloading') {
                 // Update button with progress
                 let progressText = 'Downloading...';
-                if (status.progress > 0) {
+                
+                // Show track progress if available
+                if (status.current_track && status.total_tracks) {
+                    progressText = `Downloading... [${status.current_track}/${status.total_tracks}]`;
+                } else if (status.progress > 0) {
                     progressText = `Downloading... ${status.progress}%`;
                 }
+                
+                // Override with specific messages for different phases
                 if (status.message) {
-                    if (status.message.includes('spotDL')) {
-                        progressText = 'Downloading tracks...';
-                    } else if (status.message.includes('cover art')) {
-                        progressText = 'Adding cover art...';
+                    if (status.message.includes('Starting download')) {
+                        progressText = 'Starting...';
+                    } else if (status.current_track && status.total_tracks) {
+                        // Keep the track progress format for downloading tracks
+                        progressText = `Downloading... [${status.current_track}/${status.total_tracks}]`;
                     }
                 }
+                
                 downloadButton.textContent = progressText;
                 
                 // Continue polling if not exceeded max attempts
