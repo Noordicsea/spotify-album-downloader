@@ -3,8 +3,8 @@
 A Chrome extension that allows you to download entire Spotify albums and singles using spotDL.
 
 Requirements:
-Python
-ffmpeg in path
+- Python in path
+- ffmpeg in path
 
 ## Windows setup
 - Navigate to backend-server and run setup.bat to auto install requirements.
