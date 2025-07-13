@@ -31,6 +31,58 @@
     flex-shrink: 0;
 }
 
+/* Individual album download buttons for discography pages */
+.spotify-album-download-btn {
+    background: #1db954 !important;
+    border: none !important;
+    border-radius: 4px !important;
+    color: white !important;
+    padding: 4px 8px !important;
+    margin-left: 8px !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    transition: all 0.2s ease !important;
+    opacity: 0.8 !important;
+    font-family: 'Spotify Circular', Helvetica, Arial, sans-serif !important;
+    vertical-align: middle !important;
+    min-width: 20px !important;
+    height: 20px !important;
+    justify-content: center !important;
+}
+
+.spotify-album-download-btn:hover {
+    opacity: 1 !important;
+    transform: scale(1.05) !important;
+    background: #1ed760 !important;
+}
+
+.spotify-album-download-btn:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+}
+
+.spotify-album-download-btn.downloaded {
+    background: #535353 !important;
+    cursor: default !important;
+    opacity: 0.7 !important;
+    transform: none !important;
+}
+
+.spotify-album-download-btn.downloaded:hover {
+    background: #535353 !important;
+    cursor: default !important;
+    opacity: 0.7 !important;
+    transform: none !important;
+}
+
+.spotify-album-download-btn svg {
+    flex-shrink: 0 !important;
+}
+
 /* Ensure the button fits well in different Spotify layouts */
 [data-testid="action-bar-row"] #spotify-download-button {
     height: 32px;

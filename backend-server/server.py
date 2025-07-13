@@ -345,6 +345,59 @@ def list_downloads():
     """List all downloads"""
     return jsonify(download_status)
 
+@app.route('/check-download', methods=['POST'])
+def check_download():
+    """Check if an album has already been downloaded"""
+    try:
+        data = request.json
+        artist = data.get('artist')
+        album = data.get('album')
+        
+        if not all([artist, album]):
+            return jsonify({
+                'exists': False,
+                'error': 'Missing required fields: artist, album'
+            }), 400
+        
+        # Sanitize names (same logic as in download_album_thread)
+        safe_artist = sanitize_filename(artist)
+        safe_album = sanitize_filename(album)
+        
+        # Check both album and singles directories
+        album_dir = os.path.join(SETTINGS['download_path'], safe_artist, safe_album)
+        singles_dir = os.path.join(SETTINGS['download_path'], safe_artist, 'Singles')
+        
+        # Check if album directory exists
+        album_exists = os.path.exists(album_dir) and os.path.isdir(album_dir)
+        
+        # Check if there are any files in singles directory that might match
+        singles_exists = False
+        if os.path.exists(singles_dir) and os.path.isdir(singles_dir):
+            # Look for files that might contain the album name
+            for file in os.listdir(singles_dir):
+                if safe_album.lower() in file.lower():
+                    singles_exists = True
+                    break
+        
+        exists = album_exists or singles_exists
+        
+        result = {
+            'exists': exists,
+            'album_dir': album_dir if album_exists else None,
+            'singles_dir': singles_dir if singles_exists else None
+        }
+        
+        print(f"Check download: {safe_artist} - {safe_album} = {exists}")
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error checking download: {e}")
+        return jsonify({
+            'exists': False,
+            'error': str(e)
+        }), 500
+
 if __name__ == '__main__':
     print("Starting Spotify Album Downloader Backend Server...")
     print("Server will run on http://localhost:8080")

@@ -20,7 +20,8 @@
   "content_scripts": [
     {
       "matches": [
-        "*://open.spotify.com/album/*"
+        "*://open.spotify.com/album/*",
+        "*://open.spotify.com/artist/*/discography/*"
       ],
       "js": ["content.js"],
       "css": ["styles.css"]

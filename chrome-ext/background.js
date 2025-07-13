@@ -14,6 +14,17 @@ chrome.runtime.onInstalled.addListener(() => {
                 console.log('Context menu creation error (can be ignored):', chrome.runtime.lastError);
             }
         });
+        
+        chrome.contextMenus.create({
+            id: 'downloadDiscography',
+            title: 'Download Discography',
+            contexts: ['page'],
+            documentUrlPatterns: ['*://open.spotify.com/artist/*/discography/*']
+        }, () => {
+            if (chrome.runtime.lastError) {
+                console.log('Context menu creation error (can be ignored):', chrome.runtime.lastError);
+            }
+        });
     });
 });
 
@@ -49,6 +60,8 @@ chrome.action.onClicked.addListener(async (tab) => {
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === 'downloadAlbum') {
         chrome.tabs.sendMessage(tab.id, { action: 'triggerDownload' });
+    } else if (info.menuItemId === 'downloadDiscography') {
+        chrome.tabs.sendMessage(tab.id, { action: 'triggerDiscographyDownload' });
     }
 });
 
